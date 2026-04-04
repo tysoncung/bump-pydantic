@@ -58,7 +58,10 @@ IMPORT_ROOT_VALIDATOR = m.Module(
     ]
 )
 ROOT_VALIDATOR_DECORATOR = m.Decorator(decorator=m.Call(func=m.Name("root_validator")))
-ROOT_VALIDATOR_FUNCTION = m.FunctionDef(decorators=[m.ZeroOrMore(), ROOT_VALIDATOR_DECORATOR, m.ZeroOrMore()])
+BARE_ROOT_VALIDATOR_DECORATOR = m.Decorator(decorator=m.Name("root_validator"))
+ROOT_VALIDATOR_FUNCTION = m.FunctionDef(
+    decorators=[m.ZeroOrMore(), ROOT_VALIDATOR_DECORATOR | BARE_ROOT_VALIDATOR_DECORATOR, m.ZeroOrMore()]
+)
 
 
 class ValidatorCodemod(VisitorBasedCodemodCommand):
@@ -81,7 +84,7 @@ class ValidatorCodemod(VisitorBasedCodemodCommand):
         self._import_pydantic_root_validator = False
         return updated_node
 
-    @m.visit(VALIDATOR_DECORATOR | ROOT_VALIDATOR_DECORATOR)
+    @m.visit(VALIDATOR_DECORATOR | ROOT_VALIDATOR_DECORATOR | BARE_ROOT_VALIDATOR_DECORATOR)
     def visit_validator_decorator(self, node: cst.Decorator) -> None:
         if m.matches(node.decorator, m.Call()):
             for arg in node.decorator.args:  # type: ignore[attr-defined]
@@ -113,6 +116,14 @@ class ValidatorCodemod(VisitorBasedCodemodCommand):
         # We are only able to refactor the `@validator` when the function has only `cls` and `v` as arguments.
         if len(node.params.params) > 2:
             self._should_add_comment = True
+
+    @m.leave(BARE_ROOT_VALIDATOR_DECORATOR)
+    def leave_bare_root_validator_func(
+        self, original_node: cst.Decorator, updated_node: cst.Decorator
+    ) -> cst.Decorator:
+        if self._has_comment:
+            return updated_node
+        return self._decorator_with_leading_comment(updated_node, ROOT_VALIDATOR_COMMENT)
 
     @m.leave(ROOT_VALIDATOR_DECORATOR)
     def leave_root_validator_func(self, original_node: cst.Decorator, updated_node: cst.Decorator) -> cst.Decorator:

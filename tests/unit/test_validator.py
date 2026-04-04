@@ -319,8 +319,8 @@ class TestValidatorCommand(CodemodTest):
         """
         self.assertCodemod(before, after)
 
-    @pytest.mark.xfail(reason="Not implemented yet.")
     def test_root_validator_as_cst_name(self) -> None:
+        """When @root_validator is used without parentheses, add a TODO comment."""
         before = """
         import typing as t
 
@@ -338,14 +338,16 @@ class TestValidatorCommand(CodemodTest):
         after = """
         import typing as t
 
-        from pydantic import BaseModel, model_validator
+        from pydantic import BaseModel, root_validator
 
 
         class Potato(BaseModel):
             name: str
             dialect: str
 
-            @model_validator
+            # TODO[pydantic]: We couldn't refactor the `root_validator`, please replace it by `model_validator` manually.
+            # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
+            @root_validator
             def _normalize_fields(cls, values: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
                 return values
         """
