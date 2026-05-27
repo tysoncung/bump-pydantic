@@ -345,7 +345,8 @@ class TestValidatorCommand(CodemodTest):
             name: str
             dialect: str
 
-            # TODO[pydantic]: We couldn't refactor the `root_validator`, please replace it by `model_validator` manually.
+            # TODO[pydantic]: We couldn't refactor the `root_validator`,
+            # please replace it by `model_validator` manually.
             # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
             @root_validator
             def _normalize_fields(cls, values: t.Dict[str, t.Any]) -> t.Dict[str, t.Any]:
